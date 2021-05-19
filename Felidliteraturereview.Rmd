@@ -1,0 +1,128 @@
+---
+title: "FelidTables"
+author: "Sophie Zhu"
+date: "5/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(table1)
+library(ggplot2)
+library(tidyr)
+library(broom)
+library(tidyverse)
+library(geojsonio)
+library(plotly)
+library(plyr)
+library(readxl)
+```
+
+```{r Load Data, include=FALSE}
+Felid<-read.csv("~/Downloads/Felid Literature Review - Included Papers.csv")
+# begin renaming variables #
+names(Felid)[names(Felid) == "Year.published"] <- "year"
+names(Felid)[names(Felid) == "Country.of.study"] <- "country"
+names(Felid)[names(Felid) == "Mouse.bioassay"] <- "bioassay"
+names(Felid)[names(Felid) == "Number.of.felids.samples"] <- "testtotal"
+names(Felid)[names(Felid) == "Positive.felid.samples"] <- "positivetotal"
+names(Felid)[names(Felid) == "Topic.if.relevant"] <- "topic"
+#recode topic
+topic_ref <- c('Cat bioassay'= 1,
+              'Domestic-Exp'=1, 
+              'Domestic-Domestic'=2,
+              'Domestic-FR'=3,
+              'Reshedding'=4,
+              'Wild-CAP'=5,
+              'Wild-FR'=6)
+Felid$topic <- recode_factor(Felid$topic, !!!topic_ref, .default = 1)
+Felid$topic <- factor(Felid$topic, levels = c(1,2,3,4,5,6), 
+              labels = c("Domestic Experimental", "Domestic", "Domestic free ranging", "Reshedding", "Wild captive", "Wild free ranging"))
+
+```
+
+
+
+```{r Code for Table 1, include=FALSE}
+FLTab1a<-aggregate(Felid$positivetotal, by=list(Category=Felid$topic), FUN=sum, na.rm=TRUE)
+FLTab1b<-aggregate(Felid$testtotal, by=list(Category=Felid$topic), FUN=sum, na.rm=TRUE)
+FLTab1<-merge(FLTab1a, FLTab1b, by="row.names")
+FLTab1<-FLTab1 %>%
+  mutate(Pooledprev = x.x/x.y)
+###calculate confirmed prevalences
+Felid$conf<-Felid$PCR=='Y' | Felid$bioassay=='Y'
+#143 microscropy, 152 PCR or bioassay
+aggregate(Felid$positivetotal, by=list(Category=Felid$topic), FUN=sum, na.rm=TRUE)
+
+FLTab1c<-aggregate(Felid$positivetotal ~ Felid$topic + Felid$conf, FUN=sum, na.rm=TRUE)
+FLTab1d<-aggregate(Felid$testtotal ~ Felid$topic + Felid$conf, FUN=sum, na.rm=TRUE)
+FLTab1con<-merge(FLTab1c, FLTab1d)
+FLTab1con<-FLTab1con %>%
+  mutate(Pooledprev = (.[[3]]/.[[4]])*100)
+names(FLTab1con)[names(FLTab1con) == 'Felid$conf'] <- "confirmed"
+FLTable1<-FLTab1con[!(FLTab1con$confirmed=='FALSE'),]
+
+```
+
+
+
+```{r Table 1}
+table1(~topic, data=Felid)
+###calculate combined prevalences
+table1(~(positivetotal + testtotal) | topic, data=Felid)
+FLTable1
+```
+
+
+
+```{r Table 2 code, include=FALSE}
+### Wild Felids confirmed
+Felid$conffr<-Felid$conf=='TRUE' & Felid$topic=='Wild free ranging'
+FLTab2wildcon<-aggregate(Felid$positivetotal ~Felid$conffr + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2wildconp<-aggregate(Felid$testtotal ~Felid$conffr + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2wild<-merge(FLTab2wildcon, FLTab2wildconp)
+FLTab2wild<-FLTab2wild %>%
+  mutate(Pooledprev = (.[[3]]/.[[4]])*100)
+names(FLTab2wild)[names(FLTab2wild) == 'Felid$conffr'] <- "confirmed"
+FLTable2wild<-FLTab2wild[!(FLTab2wild$confirmed=='FALSE'),]
+
+### Wild Felid combined
+Felid$frwild<-Felid$topic=='Wild free ranging'
+FLTab2wildcom<-aggregate(Felid$positivetotal ~Felid$frwild + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2wildcomb<-aggregate(Felid$testtotal ~Felid$frwild + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2wildB<-merge(FLTab2wildcom, FLTab2wildcomb)
+FLTab2wildB<-FLTab2wildB %>%
+  mutate(Pooledprev = (.[[3]]/.[[4]])*100)
+names(FLTab2wildB)[names(FLTab2wildB) == 'Felid$frwild'] <- "confirmed"
+FLTable2wildcombo<-FLTab2wildB[!(FLTab2wildB$confirmed=='FALSE'),]
+
+### Domestic Felids confirmed
+Felid$domfr<-Felid$conf=='TRUE' & Felid$topic=='Domestic free ranging'
+FLTab2domcon<-aggregate(Felid$positivetotal ~Felid$domfr + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2domconp<-aggregate(Felid$testtotal ~Felid$domfr + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2dom<-merge(FLTab2domcon, FLTab2domconp)
+FLTab2dom<-FLTab2dom %>%
+  mutate(Pooledprev = (.[[3]]/.[[4]])*100)
+names(FLTab2dom)[names(FLTab2dom) == 'Felid$domfr'] <- "confirmed"
+FLTable2domestic<-FLTab2dom[!(FLTab2dom$confirmed=='FALSE'),]
+
+###Domestic Felids combined
+Felid$domfr1<-Felid$topic=='Domestic free ranging'
+FLTab2domcon1<-aggregate(Felid$positivetotal ~Felid$domfr1 + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2domconp1<-aggregate(Felid$testtotal ~Felid$domfr1 + Felid$Continent, FUN=sum, na.rm=TRUE)
+FLTab2domcomb<-merge(FLTab2domcon1, FLTab2domconp1)
+FLTab2domcomb<-FLTab2domcomb %>%
+  mutate(Pooledprev = (.[[3]]/.[[4]])*100)
+names(FLTab2domcomb)[names(FLTab2domcomb) == 'Felid$domfr1'] <- "confirmed"
+FLTable2domesticcombo<-FLTab2domcomb[!(FLTab2domcomb$confirmed=='FALSE'),]
+
+```
+
+
+
+```{r Table 2}
+FLTable2wild
+FLTable2wildcombo
+FLTable2domestic
+FLTable2domesticcombo
+```
