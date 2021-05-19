@@ -48,7 +48,7 @@ FLTab1a<-aggregate(Felid$positivetotal, by=list(Category=Felid$topic), FUN=sum, 
 FLTab1b<-aggregate(Felid$testtotal, by=list(Category=Felid$topic), FUN=sum, na.rm=TRUE)
 FLTab1<-merge(FLTab1a, FLTab1b, by="row.names")
 FLTab1<-FLTab1 %>%
-  mutate(Pooledprev = x.x/x.y)
+  mutate(Pooledprev = x.x/x.y*100)
 ###calculate confirmed prevalences
 Felid$conf<-Felid$PCR=='Y' | Felid$bioassay=='Y'
 #143 microscropy, 152 PCR or bioassay
@@ -70,6 +70,9 @@ FLTable1<-FLTab1con[!(FLTab1con$confirmed=='FALSE'),]
 table1(~topic, data=Felid)
 ###calculate combined prevalences
 table1(~(positivetotal + testtotal) | topic, data=Felid)
+###Combined
+FLTab1
+###Confirmed
 FLTable1
 ```
 
@@ -119,10 +122,92 @@ FLTable2domesticcombo<-FLTab2domcomb[!(FLTab2domcomb$confirmed=='FALSE'),]
 ```
 
 
-
 ```{r Table 2}
 FLTable2wild
 FLTable2wildcombo
 FLTable2domestic
 FLTable2domesticcombo
+```
+
+```{r Domestic Felid Figure 2 code, include=FALSE}
+library(viridis)
+library(ggrepel)
+library(png)
+library(RCurl)
+library(grid)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library("sf")
+world <- ne_countries(scale = "small", returnclass = "sf")
+world <-subset(world, admin !="Antarctica")
+
+domfelid <- read.csv("~/Desktop/Felid Lit Review/domfelid.csv", header=FALSE, comment.char="#")
+names(domfelid)[9] <- "Lat"
+names(domfelid)[10] <- "Lon"
+names(domfelid)[17] <- "Prevalence"
+
+
+p2<-ggplot(data=world) + 
+  geom_sf() +
+  geom_point(data=domfelid, aes(x=Lon, y=Lat, size=Prevalence), bg=ifelse(domfelid$V13=="Y"|domfelid$V14=="Y", "red4", "yellow"), col="black", pch=21, stroke=1) +
+  #geom_label_repel(data=labs2, aes(label=toxo, x=Lon, y=Lat), size=3) +
+  theme(plot.title = element_text(hjust = 0.5)) +labs(title="Unowned Free-ranging Domestic Felids", fill="Samples tested") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#QE fig
+#p3<-ggplot(data=world) + 
+#  geom_sf() +
+  #geom_label(data=domfelid, aes(label=V17, x=V9, y=V10), size=3) +
+#  geom_point(data=labs3, aes(x=Lon, y=Lat, size=Study.Prevalence), bg=ifelse(labs3$Study.Prevalence<=0, "turquoise1", "mediumblue"), col="black", pch=21, stroke=1) +
+#  theme(plot.title = element_text(hjust = 0.5)) +labs(title="Confirmed T. gondii oocyst shedding prevalence among free-ranging domestic felids", fill="mediumblue") +
+#  theme_classic() +
+#  theme(plot.title = element_text(hjust = 0.5))
+
+cat=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/23cd6aa4-9587-4a2e-8e26-de42885004c9.512.png'))
+a6 = annotation_custom(rasterGrob(cat, interpolate=TRUE), ymin=-45, ymax=5, xmin=-155, xmax=-105)
+```
+
+```{r Figure 2 Domestic Felids}
+p2+a6
+```
+
+```{r Wild Felid Figure 3 code, include=FALSE}
+library(grid)
+library(png)
+library(RCurl)
+labs<-data.frame(
+  long=c(16.788, 15.587, 49.601, 49.601, -19.516, -24.133, 63.394, 38.838,
+         47.407, 65.575, 31.984, 38.369, 36.564, 47.494),
+  lat=c(-88.585, 99.306, -125.461, -125.461, -61.300, 17.934, 14.604, -107.122, 
+        -77.360, 28.241,-90.914, -3.830, -121.853, -93.056),
+  location=c("Cockscomb Basin, Belize", "Thailand", "Canada", "Canada", "Bolivia", "Namibia", "Sweden", "United States", "Canada", "Finland", "United States", "Spain", "United States", "United States"),
+  Prevalence=c(22.22, 2.17, 15.38, 6.25, 0, 47.83, 0,0,0,0,0,0,0.46, 0),
+  toxo=c("NA","NA", "*", "*"," "," "," ", "*", " ", " ", "*", " ", "*", "*"),
+  stringsAsFactors = FALSE)
+labs1<-subset(labs, toxo=="*")
+
+p1<-ggplot(data=world) + 
+  geom_sf() +
+  geom_point(data=labs, aes(x=lat, y=long, size=Prevalence), bg=ifelse(labs$toxo=="*", "red4", "yellow"), col="black", pch=21, stroke=0.5) +
+  #geom_label_repel(data=labs1, aes(label=toxo, x=lat, y=long), size=3) +
+  labs(title="Free-ranging Wild Felids", fill="Samples tested") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+bobcat=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/20442a12-596d-4987-a668-509c19a155da.512.png'))
+lion=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/e2015ba3-4f7e-4950-9bde-005e8678d77b.512.png'))
+leopard=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/78dbe564-bcba-4dc3-8bdc-fb95fc288580.512.png'))
+cougar=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/3f8eff77-2868-4121-8d7d-a55ebdd49e04.original.png'))
+ocelot=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/a42bad64-5ded-489e-9aa4-b3d93d6db7ab.512.png'))
+tiger=readPNG(getURLContent('http://phylopic.org/assets/images/submissions/e148eabb-f138-43c6-b1e4-5cda2180485a.512.png'))
+a1 = annotation_custom(rasterGrob(bobcat, interpolate=TRUE), ymin=2, ymax=50, xmin=-140, xmax=-120)
+a2 = annotation_custom(rasterGrob(lion, interpolate=TRUE), ymin=-45, ymax=5, xmin=-32, xmax=12)
+a3 = annotation_custom(rasterGrob(leopard, interpolate = TRUE), ymin=-20, ymax=10, xmin=75, xmax=107)
+a4 = annotation_custom(rasterGrob(cougar, interpolate = TRUE), ymin=30, ymax=70, xmin=-168, xmax=-138)
+a5 = annotation_custom(rasterGrob(ocelot, interpolate=TRUE), ymin=-15, ymax=30, xmin=-122, xmax=-92)
+a6 = annotation_custom(rasterGrob(tiger, interpolate=TRUE), ymin=-40, ymax=-10, xmin=75, xmax=107)
+```
+
+```{r Figure 3}
+p1+a1+a2+a3+a4+a5+a6
 ```
