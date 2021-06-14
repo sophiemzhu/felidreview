@@ -148,8 +148,8 @@ names(domfelid)[17] <- "Prevalence"
 
 
 p2<-ggplot(data=world) + 
-  geom_sf() +
-  geom_point(data=domfelid, aes(x=Lon, y=Lat, size=Prevalence), bg=ifelse(domfelid$V13=="Y"|domfelid$V14=="Y", "red4", "yellow"), col="black", pch=21, stroke=1) +
+  geom_sf(fill="grey85", lwd=0) +
+  geom_point(data=domfelid, aes(x=Lon, y=Lat, size=Prevalence), bg=ifelse(domfelid$V13=="Y"|domfelid$V14=="Y", "red","blue"), col="black", pch=ifelse(domfelid$Prevalence=="0", 19, 21), stroke=0.2) +
   #geom_label_repel(data=labs2, aes(label=toxo, x=Lon, y=Lat), size=3) +
   theme(plot.title = element_text(hjust = 0.5)) +labs(title="Unowned Free-ranging Domestic Felids", fill="Samples tested") +
   theme_classic() +
@@ -182,15 +182,16 @@ labs<-data.frame(
   lat=c(-88.585, 99.306, -125.461, -125.461, -61.300, 17.934, 14.604, -107.122, 
         -77.360, 28.241,-90.914, -3.830, -121.853, -93.056),
   location=c("Cockscomb Basin, Belize", "Thailand", "Canada", "Canada", "Bolivia", "Namibia", "Sweden", "United States", "Canada", "Finland", "United States", "Spain", "United States", "United States"),
-  Prevalence=c(22.22, 2.17, 15.38, 6.25, 0, 47.83, 0,0,0,0,0,0,0.46, 0),
+  Prevalence=c(22.22, 2.17, 15.38, 6.25, 0, 47.83, 0,0,0,0,0,0,2.99, 0),
   toxo=c("NA","NA", "*", "*"," "," "," ", "*", " ", " ", "*", " ", "*", "*"),
   stringsAsFactors = FALSE)
 labs1<-subset(labs, toxo=="*")
 
 p1<-ggplot(data=world) + 
-  geom_sf() +
-  geom_point(data=labs, aes(x=lat, y=long, size=Prevalence), bg=ifelse(labs$toxo=="*", "red4", "yellow"), col="black", pch=21, stroke=0.5) +
+  geom_sf(fill="grey85", lwd=0) +
+  geom_point(data=labs, aes(x=lat, y=long, size=Prevalence), bg=ifelse(labs$toxo=="*", "red", "blue"), col="black", pch=ifelse(labs$Prevalence=="0", 19, 21), stroke=0.2) +
   #geom_label_repel(data=labs1, aes(label=toxo, x=lat, y=long), size=3) +
+  #pch 24 triangle, pch23 square diamond, pch19 black dot
   labs(title="Free-ranging Wild Felids", fill="Samples tested") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
